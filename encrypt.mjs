@@ -42,6 +42,7 @@ const page = `<!doctype html>
     :root { --bg: #15171c; --card: #1f2229; --text: #e6e6e6; --muted: #9aa1ad; --line: #3a3f4a; --accent: #8199ff; --ng: #f87171; color-scheme: dark; }
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   body {
     margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 16px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
@@ -77,9 +78,11 @@ const page = `<!doctype html>
   <div class="error" id="err"></div>
 </form>
 <script>
+(() => {
 const DATA = { salt: "${b64(salt)}", iv: "${b64(iv)}", cipher: "${b64(cipher)}", iterations: ${ITERATIONS} };
 const KEY_STORE = "mondai-challenge-key";
 const u8 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+const form = document.getElementById("lock");
 
 async function decryptWith(rawKey) {
   const key = await crypto.subtle.importKey("raw", rawKey, "AES-GCM", false, ["decrypt"]);
@@ -94,21 +97,31 @@ async function deriveRaw(password) {
   return new Uint8Array(bits);
 }
 
+// ページの読みこみが終わってから全体を差しかえる（読みこみ中に書くと，ログイン画面の下に追加されてしまう）
 function show(html) {
-  document.open();
-  document.write(html);
-  document.close();
+  const replace = () => {
+    document.open();
+    document.write(html);
+    document.close();
+  };
+  if (document.readyState === "complete") replace();
+  else window.addEventListener("load", replace, { once: true });
 }
 
-// 覚えている鍵があれば自動でひらく（問題を更新すると鍵が変わるので，そのときは一度だけ入れ直し）
+// 覚えている鍵があれば，ログイン画面を出さずに自動でひらく
 (async () => {
   let saved = null;
   try { saved = localStorage.getItem(KEY_STORE + ":" + DATA.salt); } catch (e) {}
   if (!saved) return;
-  try { show(await decryptWith(u8(saved))); } catch (e) {}
+  form.hidden = true;
+  try {
+    show(await decryptWith(u8(saved)));
+  } catch (e) {
+    form.hidden = false; // パスワードが変わったときは入れ直し
+  }
 })();
 
-document.getElementById("lock").addEventListener("submit", async (e) => {
+form.addEventListener("submit", async (e) => {
   e.preventDefault();
   const btn = document.getElementById("go");
   const err = document.getElementById("err");
@@ -132,6 +145,7 @@ document.getElementById("lock").addEventListener("submit", async (e) => {
     btn.disabled = false;
   }
 });
+})();
 </script>
 </body>
 </html>
