@@ -35,7 +35,7 @@ const page = `<!doctype html>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="robots" content="noindex, nofollow" />
-<title>実力突破 問題チャレンジ</title>
+<title>問題チャレンジ</title>
 <style>
   :root { --bg: #f5f7fa; --card: #ffffff; --text: #333333; --muted: #6b7280; --line: #dddddd; --accent: #4f6df5; --ng: #dc2626; }
   @media (prefers-color-scheme: dark) {
